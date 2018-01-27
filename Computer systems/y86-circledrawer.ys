@@ -1,0 +1,114 @@
+#Y86 Assembly program, which draws a circle
+#using the Midpoint circle -algorithm
+main:
+  #Alustukset
+  irmovq $0x1, %rax # vakio 1
+  rrmovq %r10, %r11 # x = sade
+  subq %rax, %r11 # x--
+  irmovq $0, %r12 # y = 0
+  irmovq $1, %r13 # dx = 1
+  irmovq $1, %r14 # dy = 1
+  rrmovq %r10, %rsi # temp = sade
+  addq %r10, %rsi # temp = 2*sade (=sade<<1)
+  rrmovq %r13, %rdi # temp2 = dx
+  subq %rsi, %rdi # temp2 = dx - (sade << 1)
+  rrmovq %rdi, %rbx # err = temp2 = dx - (sade << 1)
+
+  # Piirtosilmukka
+  # while(x >= y)
+  drawloop:
+    # putpixel(x0 + x, y0 + y)
+    rrmovq %r8, %rcx # rcx = x0
+    addq %r11, %rcx # rcx = x0 + x
+    rrmovq %r9, %rdx # rdx = y0
+    addq %r12, %rdx # rdx = y0 + y
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 + y, y0 + x)
+    rrmovq %r8, %rcx # rcx = x0
+    addq %r12, %rcx # rcx = x0 + y
+    rrmovq %r9, %rdx # rdx = y0
+    addq %r11, %rdx # rdx = y0 + x
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 - y, y0 + x);
+    rrmovq %r8, %rcx # rcx = x0
+    subq %r12, %rcx # rcx = x0 - y
+    rrmovq %r9, %rdx # rdx = y0
+    addq %r11, %rdx # rdx = y0 + x
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 - x, y0 + y);
+    rrmovq %r8, %rcx # rcx = x0
+    subq %r11, %rcx # rcx = x0 - x
+    rrmovq %r9, %rdx # rdx = y0
+    addq %r12, %rdx # rdx = y0 + y
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 - x, y0 - y);
+    rrmovq %r8, %rcx # rcx = x0
+    subq %r11, %rcx # rcx = x0 - x
+    rrmovq %r9, %rdx # rdx = y0
+    subq %r12, %rdx # rdx = y0 - y
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 - y, y0 - x);
+    rrmovq %r8, %rcx # rcx = x0
+    subq %r12, %rcx # rcx = x0 - y
+    rrmovq %r9, %rdx # rdx = y0
+    subq %r11, %rdx # rdx = y0 - x
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 + y, y0 - x);
+    rrmovq %r8, %rcx # rcx = x0
+    addq %r12, %rcx # rcx = x0 + y
+    rrmovq %r9, %rdx # rdx = y0
+    subq %r11, %rdx # rdx = y0 - x
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+    # putpixel(x0 + x, y0 - y);
+    rrmovq %r8, %rcx # rcx = x0
+    addq %r11, %rcx # rcx = x0 + x
+    rrmovq %r9, %rdx # rdx = y0
+    subq %r12, %rdx # rdx = y0 - y
+    call putpixel
+    pushq %rdx # pusketaan koordinaatit pinoon
+
+    # uudet parametrit
+    irmovq $0, %rsi # apuvakio 0
+    subq %rsi, %rbx
+    jg cond1
+    # if err <= 0
+    addq %rax, %r12 # y++
+    addq %r14, %rbx # err += dy
+    addq %rax, %r14 # dy++
+    addq %rax, %r14 # dy++
+    cond1:
+      subq %rsi, %rbx
+      jle cond2
+      # if err > 0
+      subq %rax, %r11 # x--
+      addq %rax, %r13 # dx++
+      addq %rax, %r13 # dx++
+      rrmovq %r10, %rsi # temp = sade
+      addq %r10, %rsi # temp = 2*sade
+      rrmovq %r13, %rdi # temp2 = dx
+      subq %rsi, %rdi # temp2 = dx - (sade<<1)
+      addq %rdi, %rbx # err += dx - (sade<<1)
+    cond2:
+      rrmovq %r11, %rsi # temp = x
+      subq %r12, %rsi # x - y
+      jge drawloop # jos x-y>=0, silmukka jatkuu
+      halt
+
+
+# aliohjelma joka shiftaa rcx:ää 32 bittiä vasemmalle
+# ja lisää tuloksen rdx-rekisteriin
+putpixel:
+  irmovq $32, %rdi # apuvakio jolla rcx shfitataan
+  putpixelloop: # shiftaussilmukka
+   addq %rcx, %rcx
+   subq %rax, %rdi
+   jne putpixelloop # kun rdi = 0, silmukka päättyy
+   addq %rcx, %rdx # lisätään shiftattu x-koord. y-koordinaattiin
+   ret
